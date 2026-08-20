@@ -1,0 +1,65 @@
+name: DynamicLyrics
+options:
+  bundleIdPrefix: com.joaquinromero
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""            # se completa al firmar (SignTools/Xcode) con tu Apple ID
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_APP_SANDBOX: NO
+
+targets:
+  DynamicLyrics:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: "Dynamic Lyrics"
+        NSAppleMusicUsageDescription: "Necesitamos leer qué canción estás reproduciendo en Apple Music para mostrar la letra sincronizada."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    entitlements:
+      path: App/DynamicLyrics.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.joaquinromero.dynamiclyrics
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.joaquinromero.dynamiclyrics
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: DynamicLyricsWidgetExtension
+        embed: true
+
+  DynamicLyricsWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: "Dynamic Lyrics Widget"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/DynamicLyricsWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.joaquinromero.dynamiclyrics
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.joaquinromero.dynamiclyrics.widget
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: NO
