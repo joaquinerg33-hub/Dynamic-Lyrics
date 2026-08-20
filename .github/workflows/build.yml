@@ -1,0 +1,64 @@
+name: Build unsigned IPA
+
+# Se dispara manualmente desde la pestaña "Actions" de GitHub, o en cada push.
+# Genera un .ipa SIN FIRMAR (Payload/DynamicLyrics.app empaquetado).
+# Ese .ipa es justo lo que subes a SignTools para que lo firme con tu Apple ID gratis.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show available Xcode versions
+        run: ls /Applications | grep Xcode
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned .app (app + widget extension embebido)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project DynamicLyrics.xcodeproj \
+            -scheme DynamicLyrics \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build | xcpretty || true
+
+      - name: Package as unsigned .ipa
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/DynamicLyrics.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "No se encontró el .app compilado en $APP_PATH"
+            find build -maxdepth 5 -name "*.app"
+            exit 1
+          fi
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r DynamicLyrics-unsigned.ipa Payload
+          ls -la DynamicLyrics-unsigned.ipa
+
+      - name: Upload .ipa as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DynamicLyrics-unsigned-ipa
+          path: DynamicLyrics-unsigned.ipa
+          retention-days: 14
